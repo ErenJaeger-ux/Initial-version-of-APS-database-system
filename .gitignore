@@ -1,17 +1,8 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.log
 .venv/
-venv/
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+*.sqlite3
+export_view/data.json
 
-# Database & backups
-data/*.db
-backups/*
-!.gitkeep
-
-# OS
-.DS_Store
-Thumbs.db
