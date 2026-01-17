@@ -259,8 +259,14 @@
       <div class="dictionary-section">
         <div class="dictionary-header">
           <h2>Управление справочниками</h2>
+          <button
+            class="collapse-toggle"
+            id="toggleDictionaryBtn"
+            title="Свернуть/развернуть"
+            onclick="const panel=document.getElementById('dictionaryPanel');const open=panel.style.display!=='none';panel.style.display=open?'none':'block';this.textContent=open?'+':'−';"
+          >−</button>
         </div>
-        <div class="dictionary-content">
+        <div class="dictionary-content" id="dictionaryPanel">
           <div class="dictionary-lists">
             <div>
               <h3>Адреса</h3>
