@@ -716,6 +716,51 @@ setSortIndicators();
       return Array.from(groups.values()).sort((a,b) => b.count - a.count);
     }
 
+    function buildMonthly3PlusForQuarter(q) {
+      const latestYear = getLatestYear();
+      const groups = new Map();
+
+      db.records
+        .filter(r => {
+          const d = new Date(r.date);
+          const quarter = Math.floor(d.getMonth() / 3) + 1;
+          return d.getFullYear() === latestYear && quarter === q;
+        })
+        .forEach(r => {
+          const d = new Date(r.date);
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const monthLabel = `${month}.${d.getFullYear()}`;
+          const k = [monthLabel, r.address || "", r.object || ""].join("||");
+          if (!groups.has(k)) {
+            groups.set(k, {
+              month: monthLabel,
+              address: r.address || "",
+              object: r.object || "",
+              keyNumbers: new Set(),
+              count: 0
+            });
+          }
+          const g = groups.get(k);
+          g.count++;
+          if (r.keyNumber) {
+            g.keyNumbers.add(r.keyNumber);
+          }
+        });
+
+      return Array.from(groups.values())
+        .filter(g => g.count >= 3)
+        .map(g => ({
+          ...g,
+          keyNumbers: Array.from(g.keyNumbers)
+        }))
+        .sort((a, b) => {
+          if (a.month === b.month) {
+            return b.count - a.count;
+          }
+          return a.month < b.month ? 1 : -1;
+        });
+    }
+
     function renderReport(q, mode) {
       const container = document.getElementById('resultsList');
       const section = document.getElementById('resultsSection');
@@ -731,19 +776,43 @@ setSortIndicators();
         return;
       }
 
-      const groups = buildGroupsForQuarter(q);
-      const filtered = mode === "3plus" ? groups.filter(g => g.count >= 3) : groups;
+      const isMonthly3Plus = mode === "3plus";
+      const groups = isMonthly3Plus ? buildMonthly3PlusForQuarter(q) : buildGroupsForQuarter(q);
 
-      const modeLabel = mode === "3plus" ? "3+ выезда" : "все выезды";
-      title.textContent = `Отчёт: ${q} квартал (${modeLabel})`;
-      desc.innerHTML = `Одинаковые выезды объединяются по <b>Адрес + Объект + Ключ</b> и показываются одной строкой с количеством.`;
-
-      if (!filtered.length) {
-        container.innerHTML = mode === "3plus"
-          ? '<div>Нет объектов с 3+ выездами в этом квартале.</div>'
-          : '<div>В этом квартале нет выездов.</div>';
+      if (isMonthly3Plus) {
+        title.textContent = `Отчёт: ${q} квартал (3+ выезда за месяц)`;
+        desc.innerHTML = `Показываются месяцы квартала, где по паре <b>Адрес + Объект</b> было 3 и более выездов за месяц.`;
       } else {
-        filtered.forEach(g => {
+        title.textContent = `Отчёт: ${q} квартал (все выезды)`;
+        desc.innerHTML = `Одинаковые выезды объединяются по <b>Адрес + Объект + Ключ</b> и показываются одной строкой с количеством.`;
+      }
+
+      if (!groups.length) {
+        container.innerHTML = isMonthly3Plus
+          ? '<div>Нет объектов с 3+ выездами за месяц в выбранном квартале.</div>'
+          : '<div>В этом квартале нет выездов.</div>';
+      } else if (isMonthly3Plus) {
+        groups.forEach(g => {
+          const item = document.createElement('div');
+          item.className = 'analysis-item';
+
+          const titleTxt = `${g.object || '(без названия)'}`;
+          const keyInfo = g.keyNumbers.length ? ` • Ключи: ${g.keyNumbers.join(', ')}` : '';
+          const sub = `${g.address || '(без адреса)'}${keyInfo}`;
+
+          item.innerHTML = `
+            <div class="analysis-header">
+              <div class="analysis-title">
+                <div>${g.month} • ${titleTxt}</div>
+                <div class="analysis-sub">${sub}</div>
+              </div>
+              <div>${g.count} выездов</div>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      } else {
+        groups.forEach(g => {
           const item = document.createElement('div');
           item.className = 'analysis-item';
 
