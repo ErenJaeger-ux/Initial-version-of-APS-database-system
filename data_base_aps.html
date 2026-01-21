@@ -321,6 +321,17 @@
         this.sortState = { field: "date", dir: "desc" }; // дефолт: дата по убыванию
       }
 
+      normalizeDictValue(value) {
+        const trimmed = (value || "").trim();
+        return trimmed || "";
+      }
+
+      addDictValue(list, value) {
+        const normalized = this.normalizeDictValue(value);
+        if (!normalized || list.includes(normalized)) return;
+        list.push(normalized);
+      }
+
       save() {
         localStorage.setItem('apsRecords', JSON.stringify(this.records));
         localStorage.setItem('apsAddresses', JSON.stringify(this.addresses));
@@ -330,8 +341,8 @@
 
       addRecord(data) {
         this.records.push({ id: Date.now(), ...data });
-        if (data.address && !this.addresses.includes(data.address)) this.addresses.push(data.address);
-        if (data.object && !this.objects.includes(data.object)) this.objects.push(data.object);
+        this.addDictValue(this.addresses, data.address);
+        this.addDictValue(this.objects, data.object);
         this.save();
       }
 
@@ -339,8 +350,8 @@
         const idx = this.records.findIndex(r => r.id === id);
         if (idx !== -1) {
           this.records[idx] = { id, ...data };
-          if (data.address && !this.addresses.includes(data.address)) this.addresses.push(data.address);
-          if (data.object && !this.objects.includes(data.object)) this.objects.push(data.object);
+          this.addDictValue(this.addresses, data.address);
+          this.addDictValue(this.objects, data.object);
           this.save();
         }
       }
@@ -808,9 +819,9 @@ setSortIndicators();
 
       const modeLabel = mode === "3plus" ? "3+ выезда" : "все выезды";
       title.textContent = `Отчёт: ${q} квартал (${modeLabel})`;
-      desc.innerHTML = mode === "3plus"
-        ? `Внутри квартала записи делятся по месяцам и объединяются по <b>Ключ</b> (если есть), иначе по <b>Объекту</b>, иначе по <b>Адресу</b>.`
-        : `Одинаковые выезды объединяются по <b>Адрес + Объект + Ключ</b> и показываются одной строкой с количеством.`;
+      desc.textContent = mode === "3plus"
+        ? "Внутри квартала записи группируются по месяцам и объединяются по Ключу (если есть), иначе по Объекту, иначе по Адресу. В отчёт попадают группы с 3 и более выездами за месяц."
+        : "Одинаковые выезды объединяются по Адрес + Объект + Ключ и показываются одной строкой с количеством.";
 
       if (!groups.length) {
         container.innerHTML = mode === "3plus"
