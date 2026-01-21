@@ -189,6 +189,24 @@
               </div>
             </div>
 
+            <div style="margin-bottom:12px;">
+              <div style="font-weight:600; margin-bottom:6px;">Все выезды (за месяц)</div>
+              <div class="button-group">
+                <button class="btn-report" data-report="monthAll" data-month="0">Январь</button>
+                <button class="btn-report" data-report="monthAll" data-month="1">Февраль</button>
+                <button class="btn-report" data-report="monthAll" data-month="2">Март</button>
+                <button class="btn-report" data-report="monthAll" data-month="3">Апрель</button>
+                <button class="btn-report" data-report="monthAll" data-month="4">Май</button>
+                <button class="btn-report" data-report="monthAll" data-month="5">Июнь</button>
+                <button class="btn-report" data-report="monthAll" data-month="6">Июль</button>
+                <button class="btn-report" data-report="monthAll" data-month="7">Август</button>
+                <button class="btn-report" data-report="monthAll" data-month="8">Сентябрь</button>
+                <button class="btn-report" data-report="monthAll" data-month="9">Октябрь</button>
+                <button class="btn-report" data-report="monthAll" data-month="10">Ноябрь</button>
+                <button class="btn-report" data-report="monthAll" data-month="11">Декабрь</button>
+              </div>
+            </div>
+
             <div>
               <div style="font-weight:600; margin-bottom:6px;">3 и более выезда (сводка)</div>
               <div class="button-group">
@@ -873,6 +891,37 @@ setSortIndicators();
         .sort((a,b) => b.count - a.count);
     }
 
+    function buildGroupsForMonth(monthIndex) {
+      const latestYear = getLatestYear();
+      const groups = new Map();
+      let total = 0;
+
+      db.records
+        .filter(r => {
+          const d = new Date(r.date);
+          return d.getFullYear() === latestYear && d.getMonth() === monthIndex;
+        })
+        .forEach(r => {
+          total++;
+          const k = [r.address || "", r.object || "", r.keyNumber || ""].join("||");
+          if (!groups.has(k)) {
+            groups.set(k, { address: r.address || "", object: r.object || "", keyNumber: r.keyNumber || "", count: 0, details: [] });
+          }
+          const g = groups.get(k);
+          g.count++;
+          g.details.push(`${(r.date || "").split('-').reverse().join('.')} в ${r.time || ''}`);
+        });
+
+      for (const g of groups.values()) {
+        g.details.sort((a,b) => (a < b ? 1 : -1));
+      }
+
+      return {
+        total,
+        groups: Array.from(groups.values()).sort((a,b) => b.count - a.count)
+      };
+    }
+
     function renderReport(q, mode) {
       const container = document.getElementById('resultsList');
       const section = document.getElementById('resultsSection');
@@ -889,11 +938,25 @@ setSortIndicators();
       }
 
       const latestYear = getLatestYear();
-      const groups = mode === "3plus" ? build3PlusForMonth(q) : buildGroupsForQuarter(q);
+      let groups = [];
+      let total = 0;
+
+      if (mode === "3plus") {
+        groups = build3PlusForMonth(q);
+      } else if (mode === "monthAll") {
+        const monthResult = buildGroupsForMonth(q);
+        groups = monthResult.groups;
+        total = monthResult.total;
+      } else {
+        groups = buildGroupsForQuarter(q);
+      }
 
       if (mode === "3plus") {
         title.textContent = `Отчёт: ${monthNames[q]} ${latestYear} (3+ выезда)`;
         desc.textContent = "В отчёт попадают группы с 3 и более выездами за выбранный месяц.";
+      } else if (mode === "monthAll") {
+        title.textContent = `Отчёт: ${monthNames[q]} ${latestYear} (все выезды)`;
+        desc.textContent = `Всего выездов за месяц: ${total}. Одинаковые выезды объединяются по Адрес + Объект + Ключ и показываются одной строкой с количеством.`;
       } else {
         title.textContent = `Отчёт: ${q} квартал (все выезды)`;
         desc.textContent = "Одинаковые выезды объединяются по Адрес + Объект + Ключ и показываются одной строкой с количеством.";
@@ -902,7 +965,9 @@ setSortIndicators();
       if (!groups.length) {
         container.innerHTML = mode === "3plus"
           ? '<div>Нет объектов с 3+ выездами в этом месяце.</div>'
-          : '<div>В этом квартале нет выездов.</div>';
+          : mode === "monthAll"
+            ? '<div>В этом месяце нет выездов.</div>'
+            : '<div>В этом квартале нет выездов.</div>';
       } else {
         groups.forEach(g => {
           const item = document.createElement('div');
@@ -948,7 +1013,7 @@ setSortIndicators();
         btn.classList.add('active');
 
         const mode = btn.dataset.report;
-        const value = mode === "3plus"
+        const value = mode === "3plus" || mode === "monthAll"
           ? parseInt(btn.dataset.month, 10)
           : parseInt(btn.dataset.quarter, 10);
         renderReport(value, mode);
