@@ -191,10 +191,18 @@
             <div>
               <div style="font-weight:600; margin-bottom:6px;">3 и более выезда (сводка)</div>
               <div class="button-group">
-                <button class="btn-report" data-report="3plus" data-quarter="1">1 квартал (3+)</button>
-                <button class="btn-report" data-report="3plus" data-quarter="2">2 квартал (3+)</button>
-                <button class="btn-report" data-report="3plus" data-quarter="3">3 квартал (3+)</button>
-                <button class="btn-report" data-report="3plus" data-quarter="4">4 квартал (3+)</button>
+                <button class="btn-report" data-report="3plus" data-month="0">Январь</button>
+                <button class="btn-report" data-report="3plus" data-month="1">Февраль</button>
+                <button class="btn-report" data-report="3plus" data-month="2">Март</button>
+                <button class="btn-report" data-report="3plus" data-month="3">Апрель</button>
+                <button class="btn-report" data-report="3plus" data-month="4">Май</button>
+                <button class="btn-report" data-report="3plus" data-month="5">Июнь</button>
+                <button class="btn-report" data-report="3plus" data-month="6">Июль</button>
+                <button class="btn-report" data-report="3plus" data-month="7">Август</button>
+                <button class="btn-report" data-report="3plus" data-month="8">Сентябрь</button>
+                <button class="btn-report" data-report="3plus" data-month="9">Октябрь</button>
+                <button class="btn-report" data-report="3plus" data-month="10">Ноябрь</button>
+                <button class="btn-report" data-report="3plus" data-month="11">Декабрь</button>
               </div>
             </div>
           </div>
@@ -328,7 +336,7 @@
 
       addDictValue(list, value) {
         const normalized = this.normalizeDictValue(value);
-        if (!normalized || list.includes(normalized)) return;
+        if (!normalized || list.some(item => this.normalizeDictValue(item) === normalized)) return;
         list.push(normalized);
       }
 
@@ -712,6 +720,13 @@ setSortIndicators();
       return new Date(Math.max(...db.records.map(r => new Date(r.date)))).getFullYear();
     }
 
+    const monthNames = [
+      "Январь", "Февраль", "Март",
+      "Апрель", "Май", "Июнь",
+      "Июль", "Август", "Сентябрь",
+      "Октябрь", "Ноябрь", "Декабрь"
+    ];
+
     function buildGroupsForQuarter(q) {
       const latestYear = getLatestYear();
       const groups = new Map();
@@ -740,27 +755,16 @@ setSortIndicators();
       return Array.from(groups.values()).sort((a,b) => b.count - a.count);
     }
 
-    function buildMonthly3PlusForQuarter(q) {
+    function build3PlusForMonth(monthIndex) {
       const latestYear = getLatestYear();
       const groups = new Map();
-      const monthNames = [
-        "Январь", "Февраль", "Март",
-        "Апрель", "Май", "Июнь",
-        "Июль", "Август", "Сентябрь",
-        "Октябрь", "Ноябрь", "Декабрь"
-      ];
 
       db.records
         .filter(r => {
           const d = new Date(r.date);
-          const quarter = Math.floor(d.getMonth() / 3) + 1;
-          return d.getFullYear() === latestYear && quarter === q;
+          return d.getFullYear() === latestYear && d.getMonth() === monthIndex;
         })
         .forEach(r => {
-          const d = new Date(r.date);
-          const monthIndex = d.getMonth();
-          const monthKey = `${d.getFullYear()}-${String(monthIndex + 1).padStart(2, "0")}`;
-          const monthLabel = `${monthNames[monthIndex]} ${d.getFullYear()}`;
           const keyNumber = (r.keyNumber || "").trim();
           const objectName = (r.object || "").trim();
           const address = (r.address || "").trim();
@@ -774,11 +778,9 @@ setSortIndicators();
             identifierValue = objectName;
           }
 
-          const groupKey = `${monthKey}||${identifierType}||${identifierValue}`;
+          const groupKey = `${identifierType}||${identifierValue}`;
           if (!groups.has(groupKey)) {
             groups.set(groupKey, {
-              monthKey,
-              monthLabel,
               address,
               object: objectName,
               keyNumber,
@@ -815,17 +817,20 @@ setSortIndicators();
         return;
       }
 
-      const groups = mode === "3plus" ? buildMonthly3PlusForQuarter(q) : buildGroupsForQuarter(q);
+      const latestYear = getLatestYear();
+      const groups = mode === "3plus" ? build3PlusForMonth(q) : buildGroupsForQuarter(q);
 
-      const modeLabel = mode === "3plus" ? "3+ выезда" : "все выезды";
-      title.textContent = `Отчёт: ${q} квартал (${modeLabel})`;
-      desc.textContent = mode === "3plus"
-        ? "Внутри квартала записи группируются по месяцам и объединяются по Ключу (если есть), иначе по Объекту, иначе по Адресу. В отчёт попадают группы с 3 и более выездами за месяц."
-        : "Одинаковые выезды объединяются по Адрес + Объект + Ключ и показываются одной строкой с количеством.";
+      if (mode === "3plus") {
+        title.textContent = `Отчёт: ${monthNames[q]} ${latestYear} (3+ выезда)`;
+        desc.textContent = "В отчёт попадают группы с 3 и более выездами за выбранный месяц.";
+      } else {
+        title.textContent = `Отчёт: ${q} квартал (все выезды)`;
+        desc.textContent = "Одинаковые выезды объединяются по Адрес + Объект + Ключ и показываются одной строкой с количеством.";
+      }
 
       if (!groups.length) {
         container.innerHTML = mode === "3plus"
-          ? '<div>Нет объектов с 3+ выездами в этом квартале (по месяцам).</div>'
+          ? '<div>Нет объектов с 3+ выездами в этом месяце.</div>'
           : '<div>В этом квартале нет выездов.</div>';
       } else {
         groups.forEach(g => {
@@ -833,8 +838,7 @@ setSortIndicators();
           item.className = 'analysis-item';
 
           const titleTxt = `${g.object || '(без названия)'}`;
-          const monthPart = g.monthLabel ? ` • ${g.monthLabel}` : '';
-          const sub = `${g.address || '(без адреса)'}${g.keyNumber ? ` • Ключ: ${g.keyNumber}` : ''}${monthPart}`;
+          const sub = `${g.address || '(без адреса)'}${g.keyNumber ? ` • Ключ: ${g.keyNumber}` : ''}`;
 
           item.innerHTML = `
             <div class="analysis-header">
@@ -872,9 +876,11 @@ setSortIndicators();
         document.querySelectorAll('.btn-report').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const q = parseInt(btn.dataset.quarter, 10);
         const mode = btn.dataset.report;
-        renderReport(q, mode);
+        const value = mode === "3plus"
+          ? parseInt(btn.dataset.month, 10)
+          : parseInt(btn.dataset.quarter, 10);
+        renderReport(value, mode);
       };
     });
 
