@@ -237,11 +237,11 @@
             <span class="pill" id="filteredCountPill" style="display:none;"></span>
           </div>
           <div class="toolbar-left">
-            <button class="collapse-toggle" id="toggleJournalBtn" title="Свернуть/развернуть">−</button>
+            <button class="collapse-toggle" id="toggleJournalBtn" title="Свернуть/развернуть">+</button>
           </div>
         </div>
 
-        <div id="journalPanel">
+        <div id="journalPanel" style="display:none;">
           <input type="text" id="searchInput" class="search-box" placeholder="🔍 Быстрый поиск по адресу, объекту или ключу...">
 
           <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px;">
@@ -274,9 +274,9 @@
             id="toggleDictionaryBtn"
             title="Свернуть/развернуть"
             onclick="const panel=document.getElementById('dictionaryPanel');const open=panel.style.display!=='none';panel.style.display=open?'none':'block';this.textContent=open?'+':'−';"
-          >−</button>
+          >+</button>
         </div>
-        <div class="dictionary-content" id="dictionaryPanel">
+        <div class="dictionary-content" id="dictionaryPanel" style="display:none;">
           <div class="dictionary-lists">
             <div>
               <h3>Адреса</h3>
@@ -460,6 +460,10 @@
     let dictEditTarget = null;
 
     function safeLower(s) { return (s || "").toString().toLowerCase(); }
+
+    function setSortIndicators() {
+      // Заглушка, чтобы не падал updateUI. Сортировка сейчас фиксированная.
+    }
 
     function parseKeyNumber(k) {
       // ключи бывают строкой; попробуем вытащить число, иначе NaN
@@ -999,9 +1003,9 @@ setSortIndicators();
 
     window.onload = () => {
       clearForm();
-      // по умолчанию журнал видимый
-      document.getElementById("journalPanel").style.display = "block";
-      document.getElementById("toggleJournalBtn").textContent = "−";
+      // по умолчанию журнал скрыт
+      document.getElementById("journalPanel").style.display = "none";
+      document.getElementById("toggleJournalBtn").textContent = "+";
     };
   </script>
 </body>
