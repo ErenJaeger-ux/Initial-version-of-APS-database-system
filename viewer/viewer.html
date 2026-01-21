@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Витрина АПС — только просмотр</title>
+  <style>
+    :root{--bg:#0b1220;--card:#111a2e;--line:#243357;--muted:#9fb0d1;--text:#e8eefc}
+    body{font-family:Arial, sans-serif; margin:16px; background:var(--bg); color:var(--text)}
+    h2{margin:0 0 10px 0}
+    .badge{display:inline-block; padding:2px 10px; border:1px solid #2b3b68; border-radius:999px; font-size:12px; color:var(--muted)}
+    .card{background:var(--card); border:1px solid #223055; border-radius:12px; padding:12px}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:end}
+    label{font-size:12px; color:var(--muted)}
+    input,select,button{padding:8px 10px; border-radius:10px; border:1px solid #2b3b68; background:#0e1730; color:var(--text)}
+    button{cursor:pointer}
+    .meta{margin-left:auto; color:var(--muted); font-size:12px}
+    table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14px}
+    th,td{border-bottom:1px solid var(--line); padding:8px 6px; text-align:left; vertical-align:top}
+    th{position:sticky; top:0; background:#0e1730}
+    .tabs{display:flex; gap:8px; margin:12px 0}
+    .tab{padding:8px 10px; border-radius:10px; border:1px solid #2b3b68; background:#0e1730; color:var(--text)}
+    .tab.active{outline:2px solid #3a59a6}
+    .reports{display:none; margin-top:10px}
+    .reports.active{display:block}
+    .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px}
+    .kpi{border:1px solid #2b3b68; border-radius:12px; padding:10px; background:#0e1730}
+    .kpi b{font-size:18px}
+    .small{font-size:12px; color:var(--muted)}
+    .list{max-height:320px; overflow:auto; border:1px solid #2b3b68; border-radius:12px}
+    .list table{margin:0}
+  </style>
+</head>
+<body>
+  <h2>Витрина АПС <span class="badge">только просмотр</span></h2>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="tabJournal">Журнал</button>
+      <button class="tab" id="tabReports">Отчёты</button>
+      <span class="meta" id="metaTop"></span>
+    </div>
+
+    <!-- ЖУРНАЛ -->
+    <div id="panelJournal">
+      <div class="row">
+        <div>
+          <label>Поиск</label><br/>
+          <input id="q" placeholder="адрес / объект / ключ / причина..." style="min-width:260px" />
+        </div>
+
+        <div>
+          <label>Ключ</label><br/>
+          <select id="fKey"><option value="">Все</option></select>
+        </div>
+
+        <div>
+          <label>Адрес</label><br/>
+          <select id="fAddr"><option value="">Все</option></select>
+        </div>
+
+        <div>
+          <label>Объект</label><br/>
+          <select id="fObj"><option value="">Все</option></select>
+        </div>
+
+        <div>
+          <label>Год</label><br/>
+          <select id="fYear"><option value="">Все</option></select>
+        </div>
+
+        <div>
+          <button id="btnReset">Сброс</button>
+        </div>
+
+        <div class="meta" id="meta"></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:140px">Дата</th>
+            <th style="width:90px">Ключ</th>
+            <th style="width:320px">Адрес</th>
+            <th>Объект</th>
+            <th style="width:140px">Причина</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <!-- ОТЧЁТЫ -->
+    <div id="panelReports" class="reports">
+      <div class="row" style="margin-bottom:10px">
+        <div>
+          <label>Год (для отчётов)</label><br/>
+          <select id="rYear"></select>
+        </div>
+        <div>
+          <button id="rAllQ1">1 квартал (все)</button>
+          <button id="rAllQ2">2 квартал (все)</button>
+          <button id="rAllQ3">3 квартал (все)</button>
+          <button id="rAllQ4">4 квартал (все)</button>
+        </div>
+        <div>
+          <button id="r3pQ1">1 квартал (3+)</button>
+          <button id="r3pQ2">2 квартал (3+)</button>
+          <button id="r3pQ3">3 квартал (3+)</button>
+          <button id="r3pQ4">4 квартал (3+)</button>
+        </div>
+        <div class="meta" id="rMeta"></div>
+      </div>
+
+      <div class="grid">
+        <div class="kpi">
+          <div class="small" id="kpiTitle">—</div>
+          <b id="kpiCount">0</b>
+          <div class="small">выездов в выборке</div>
+        </div>
+
+        <div class="kpi">
+          <div class="small">Уникальных адресов</div>
+          <b id="kpiAddr">0</b>
+        </div>
+
+        <div class="kpi">
+          <div class="small">Уникальных объектов</div>
+          <b id="kpiObj">0</b>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="list">
+        <table>
+          <thead>
+            <tr>
+              <th>Адрес</th>
+              <th>Объект</th>
+              <th style="width:80px">Кол-во</th>
+            </tr>
+          </thead>
+          <tbody id="rRows"></tbody>
+        </table>
+      </div>
+      <div class="small" style="margin-top:8px">
+        * Для отчёта “3+” считаем по паре <b>адрес+объект</b>. Если хочешь иначе (только адрес или только объект) — скажи, поменяю.
+      </div>
+    </div>
+  </div>
+
+  <!-- data.js лежит рядом в шаре -->
+  <script src="./data.js"></script>
+  <script>
+    // ===== helpers =====
+    const db = window.APS_DB || {};
+    const records = Array.isArray(db.records) ? db.records : [];
+
+    const $ = (id) => document.getElementById(id);
+
+    const get = (r, keys) => {
+      for (const k of keys) if (r && r[k] != null && r[k] !== "") return String(r[k]);
+      return "";
+    };
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function uniqSorted(arr){
+      return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ru'));
+    }
+
+    function parseDateAny(s){
+      // пытаемся вытащить дату из разных форматов
+      if (!s) return null;
+      const str = String(s).trim();
+
+      // 2026-01-21...
+      let m = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+
+      // 21.01.2026...
+      m = str.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (m) return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+
+      // fallback
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function getDateObj(r){
+      const raw = get(r, ["date","дата","datetime","createdAt","timestamp"]);
+      return parseDateAny(raw);
+    }
+
+    function getYear(r){
+      const d = getDateObj(r);
+      return d ? d.getFullYear() : null;
+    }
+
+    function getQuarter(r){
+      const d = getDateObj(r);
+      if (!d) return null;
+      return Math.floor(d.getMonth()/3)+1; // 1..4
+    }
+
+    function recKey(r){ return get(r, ["key","ключ","keyNumber","key_id"]); }
+    function recAddr(r){ return get(r, ["address","адрес"]); }
+    function recObj(r){  return get(r, ["object","объект","name"]); }
+    function recReason(r){ return get(r, ["reason","причина","comment","комментарий"]); }
+    function recDateStr(r){ return get(r, ["date","дата","datetime","createdAt"]); }
+
+    function fillSelect(sel, values){
+      const keep = sel.value;
+      sel.innerHTML = '<option value="">Все</option>' + values.map(v=>`<option>${escapeHtml(v)}</option>`).join("");
+      sel.value = values.includes(keep) ? keep : "";
+    }
+
+    // ===== tabs =====
+    function setTab(name){
+      const isJournal = name === "journal";
+      $("tabJournal").classList.toggle("active", isJournal);
+      $("tabReports").classList.toggle("active", !isJournal);
+      $("panelJournal").style.display = isJournal ? "block" : "none";
+      $("panelReports").classList.toggle("active", !isJournal);
+    }
+    $("tabJournal").onclick = () => setTab("journal");
+    $("tabReports").onclick = () => setTab("reports");
+
+    // ===== journal =====
+    const rowsEl = $("rows");
+    const metaEl = $("meta");
+    const metaTop = $("metaTop");
+
+    function buildJournalFilters(){
+      const keys = uniqSorted(records.map(recKey));
+      const addrs = uniqSorted(records.map(recAddr));
+      const objs = uniqSorted(records.map(recObj));
+      const years = uniqSorted(records.map(r => {
+        const y = getYear(r);
+        return y ? String(y) : "";
+      }));
+
+      fillSelect($("fKey"), keys);
+      fillSelect($("fAddr"), addrs);
+      fillSelect($("fObj"), objs);
+
+      const yearSel = $("fYear");
+      const keep = yearSel.value;
+      yearSel.innerHTML = '<option value="">Все</option>' + years.map(y=>`<option>${y}</option>`).join("");
+      yearSel.value = years.includes(keep) ? keep : "";
+
+      // reports year selector
+      const rYear = $("rYear");
+      const keepR = rYear.value;
+      rYear.innerHTML = years.length ? years.map(y=>`<option>${y}</option>`).join("") : '<option value="">—</option>';
+      rYear.value = years.includes(keepR) ? keepR : (years[0] || "");
+    }
+
+    function renderJournal(){
+      const q = $("q").value.trim().toLowerCase();
+      const fk = $("fKey").value;
+      const fa = $("fAddr").value;
+      const fo = $("fObj").value;
+      const fy = $("fYear").value;
+
+      const filtered = records.filter(r => {
+        const key = recKey(r), addr = recAddr(r), obj = recObj(r);
+        const y = getYear(r);
+
+        if (fk && key !== fk) return false;
+        if (fa && addr !== fa) return false;
+        if (fo && obj !== fo) return false;
+        if (fy && String(y || "") !== fy) return false;
+
+        if (q) {
+          const blob = (recDateStr(r)+" "+key+" "+addr+" "+obj+" "+recReason(r)).toLowerCase();
+          if (!blob.includes(q)) return false;
+        }
+        return true;
+      });
+
+      rowsEl.innerHTML = filtered.map(r => `
+        <tr>
+          <td>${escapeHtml(recDateStr(r))}</td>
+          <td>${escapeHtml(recKey(r))}</td>
+          <td>${escapeHtml(recAddr(r))}</td>
+          <td>${escapeHtml(recObj(r))}</td>
+          <td>${escapeHtml(recReason(r))}</td>
+        </tr>
+      `).join("");
+
+      metaEl.textContent = `Показано: ${filtered.length} / ${records.length}`;
+      metaTop.textContent = `Всего записей: ${records.length}`;
+    }
+
+    $("q").addEventListener("input", renderJournal);
+    $("fKey").addEventListener("change", renderJournal);
+    $("fAddr").addEventListener("change", renderJournal);
+    $("fObj").addEventListener("change", renderJournal);
+    $("fYear").addEventListener("change", renderJournal);
+    $("btnReset").onclick = () => {
+      $("q").value = "";
+      $("fKey").value = "";
+      $("fAddr").value = "";
+      $("fObj").value = "";
+      $("fYear").value = "";
+      renderJournal();
+    };
+
+    // ===== reports (quarters + 3+) =====
+    const rMeta = $("rMeta");
+    const rRows = $("rRows");
+
+    function groupByAddrObj(list){
+      const map = new Map();
+      for (const r of list){
+        const addr = recAddr(r);
+        const obj  = recObj(r);
+        const k = (addr || "") + "||" + (obj || "");
+        map.set(k, (map.get(k) || 0) + 1);
+      }
+      const rows = [];
+      for (const [k, cnt] of map.entries()){
+        const [addr, obj] = k.split("||");
+        rows.push({ addr, obj, cnt });
+      }
+      rows.sort((a,b)=> b.cnt - a.cnt || a.addr.localeCompare(b.addr,'ru'));
+      return rows;
+    }
+
+    function runQuarterReport(q, mode){
+      const year = $("rYear").value;
+      const list = records.filter(r => {
+        const y = getYear(r);
+        const qq = getQuarter(r);
+        if (!y || !qq) return false;
+        if (String(y) !== String(year)) return false;
+        return qq === q;
+      });
+
+      const grouped = groupByAddrObj(list);
+      const finalRows = (mode === "3plus")
+        ? grouped.filter(x => x.cnt >= 3)
+        : grouped;
+
+      // KPIs
+      $("kpiTitle").textContent = `${year} — ${q} квартал (${mode === "3plus" ? "3+ выезда" : "все выезды"})`;
+      $("kpiCount").textContent = String(list.length);
+      $("kpiAddr").textContent  = String(new Set(list.map(recAddr).filter(Boolean)).size);
+      $("kpiObj").textContent   = String(new Set(list.map(recObj).filter(Boolean)).size);
+
+      rMeta.textContent = `Строк: ${finalRows.length} (группировка адрес+объект)`;
+
+      rRows.innerHTML = finalRows.map(x => `
+        <tr>
+          <td>${escapeHtml(x.addr)}</td>
+          <td>${escapeHtml(x.obj)}</td>
+          <td>${x.cnt}</td>
+        </tr>
+      `).join("");
+
+      setTab("reports");
+    }
+
+    $("rAllQ1").onclick = () => runQuarterReport(1,"all");
+    $("rAllQ2").onclick = () => runQuarterReport(2,"all");
+    $("rAllQ3").onclick = () => runQuarterReport(3,"all");
+    $("rAllQ4").onclick = () => runQuarterReport(4,"all");
+
+    $("r3pQ1").onclick = () => runQuarterReport(1,"3plus");
+    $("r3pQ2").onclick = () => runQuarterReport(2,"3plus");
+    $("r3pQ3").onclick = () => runQuarterReport(3,"3plus");
+    $("r3pQ4").onclick = () => runQuarterReport(4,"3plus");
+
+    // ===== init =====
+    buildJournalFilters();
+    renderJournal();
+  </script>
+</body>
+</html>
