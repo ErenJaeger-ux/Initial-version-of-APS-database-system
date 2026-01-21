@@ -320,11 +320,17 @@
   </div>
 
   <script>
+    const STORAGE_KEYS = {
+      records: 'apsRecords',
+      addresses: 'apsAddresses',
+      objects: 'apsObjects'
+    };
+
     class APSDatabase {
       constructor() {
-        this.records = JSON.parse(localStorage.getItem('apsRecords')) || [];
-        this.addresses = JSON.parse(localStorage.getItem('apsAddresses')) || [];
-        this.objects = JSON.parse(localStorage.getItem('apsObjects')) || [];
+        this.records = JSON.parse(localStorage.getItem(STORAGE_KEYS.records)) || [];
+        this.addresses = JSON.parse(localStorage.getItem(STORAGE_KEYS.addresses)) || [];
+        this.objects = JSON.parse(localStorage.getItem(STORAGE_KEYS.objects)) || [];
         this.selectedRecordId = null;
         this.searchQuery = "";
         this.sortState = { field: "date", dir: "desc" }; // дефолт: дата по убыванию
@@ -371,9 +377,10 @@
       }
 
       save() {
-        localStorage.setItem('apsRecords', JSON.stringify(this.records));
-        localStorage.setItem('apsAddresses', JSON.stringify(this.addresses));
-        localStorage.setItem('apsObjects', JSON.stringify(this.objects));
+        localStorage.setItem(STORAGE_KEYS.records, JSON.stringify(this.records));
+        localStorage.setItem(STORAGE_KEYS.addresses, JSON.stringify(this.addresses));
+        localStorage.setItem(STORAGE_KEYS.objects, JSON.stringify(this.objects));
+        // Раньше справочники не обновлялись из-за разнобоя ключей localStorage и отсутствия явной перерисовки.
         updateUI();
       }
 
@@ -384,8 +391,8 @@
           object: this.normalizeDictValue(data.object)
         };
         this.records.push({ id: Date.now(), ...normalized });
-        this.addDictValue(this.addresses, data.address);
-        this.addDictValue(this.objects, data.object);
+        this.addDictValue(this.addresses, normalized.address);
+        this.addDictValue(this.objects, normalized.object);
         this.save();
       }
 
@@ -398,8 +405,8 @@
             object: this.normalizeDictValue(data.object)
           };
           this.records[idx] = { id, ...normalized };
-          this.addDictValue(this.addresses, data.address);
-          this.addDictValue(this.objects, data.object);
+          this.addDictValue(this.addresses, normalized.address);
+          this.addDictValue(this.objects, normalized.object);
           this.save();
         }
       }
